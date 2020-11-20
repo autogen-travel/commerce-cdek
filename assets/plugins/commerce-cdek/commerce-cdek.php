@@ -83,7 +83,7 @@ switch ($e->name) {
 	case 'OnCollectSubtotals': {
 		$processor = $modx->commerce->loadProcessor();
 		$method = $processor->getCurrentDelivery();
-
+		if(!$method) break;
 		//Если выбран способ доставки, которого нет в других плагинах (значит CDEK)
 		$otherMethods = $modx->commerce->getDeliveries();
 
@@ -118,14 +118,14 @@ switch ($e->name) {
 
 			$tariffs = $cdek->calc();
 
-			$modx->setPlaceholder('city.value', $cdek->session['cityname']);	
-			$modx->setPlaceholder('cdek_cityid.value', $cdek->session['cityid']);
-			$modx->setPlaceholder('cdek_pvz_code.value', $cdek->session['pvz_code']);
+			$modx->setPlaceholder('city.value', $cdek->getSession('cityname'));	
+			$modx->setPlaceholder('cdek_cityid.value', $cdek->getSession('cityid'));
+			$modx->setPlaceholder('cdek_pvz_code.value', $cdek->getSession('pvz_code'));
 
 			if(!isset($cdek->session['pvz_code']) && $method=='cdek_pvz') {
 				$modx->setPlaceholder('address.value', 'не выбран');
 			} else {
-				$modx->setPlaceholder('address.value', $cdek->session['address']);
+				$modx->setPlaceholder('address.value', $cdek->getSession('address'));
 			}
 
 
@@ -228,4 +228,3 @@ switch ($e->name) {
         break;
     }
 }
-$modx->event->output($out);

@@ -12,8 +12,12 @@ class commerceCDEK {
 		$this->delivery_modes = [1,2];
 	}
 
-	private function getSession($key='') {
-		if(!isset($_SESSION['cdek'])) $_SESSION['cdek'] = [];
+	public function getSession($key='') {
+		if(!isset($_SESSION['cdek'])) {
+			$_SESSION['cdek'] = [
+				'cityid'=>0
+			];
+		}
 
 		if(empty($key)) {
 			return $_SESSION['cdek'];
@@ -111,11 +115,15 @@ class commerceCDEK {
 
 	private function getCalcHash() {
 		$packages = $this->getPackages();
-		$hash_str = $this->session['cityid'].'_'.json_encode($packages).$this->config['extradays'].$this->config['upsale'].$this->config['sender_city'];
+		$hash_str = $this->getSession('cityid').'_'.json_encode($packages).$this->config['extradays'].$this->config['upsale'].$this->config['sender_city'];
 		return md5($hash_str);
 	}
 
 	private function getToken() {
+		if(!isset($this->config['sender_city']) || empty($this->config['sender_city']) || !isset($this->config['client_id']) || empty($this->config['client_id']) || !isset($this->config['client_secret']) || empty($this->config['client_secret'])) {
+			$this->evo->logEvent(123, 1, 'Проверьте учетные данные плагина СДЭК', 'Проверьте учетные данные плагина СДЭК');
+			die('Проверьте учетные данные плагина СДЭК');
+		}
 		if(isset($_SESSION['cdek_token']) && isset($_SESSION['cdek_tokenExpired']) && $_SESSION['cdek_tokenExpired'] > time()) {
 			return $_SESSION['cdek_token'];
 		}
@@ -179,7 +187,7 @@ class commerceCDEK {
 	public function calc() {
 		$hash = $this->getCalcHash();
 		if(isset($this->session['cdek_tariff_'.$hash])) {
-			return $this->session['cdek_tariff_'.$hash];
+			return $this->getSession('cdek_tariff_'.$hash);
 		} else {
 			$post_data = [
 				'type'=>1, //Тип заказа: 1 - Интернет-магазин, 2 - доставка
@@ -187,7 +195,7 @@ class commerceCDEK {
 					'code'=>$this->config['sender_city']
 				],
 				'to_location'=>[
-					'code'=>$this->session['cityid']
+					'code'=>$this->getSession('cityid')
 				],
 				'packages'=>$this->getPackages()
 			];
@@ -230,7 +238,6 @@ class commerceCDEK {
 			}
 		}
 
-
 		$this->setSession('cdek_tariff_'.$hash, $cleanResult);
 		return $cleanResult;
 	}
@@ -247,14 +254,14 @@ class commerceCDEK {
 	}
 
 	private function getPvzList($type='ALL') {
-		$pvzFile = MODX_BASE_PATH . 'assets/plugins/commerce-cdek/pvz/'.$this->session['cityid'].'.json';
+		$pvzFile = MODX_BASE_PATH . 'assets/plugins/commerce-cdek/pvz/'.$this->getSession('cityid').'.json';
 		if(file_exists($pvzFile) && filectime($pvzFile) > time()-864000) {
 			$json = file_get_contents($pvzFile);
 			return json_decode($json, true);
 		}
 
 		$url = 'https://api.cdek.ru/v2/deliverypoints';
-		$post_data = ['city_code'=>$this->session['cityid'], 'type'=>$type];
+		$post_data = ['city_code'=>$this->getSession('cityid'), 'type'=>$type];
 		$result = $this->request($url, $post_data, 'get');
 		file_put_contents($pvzFile, json_encode($result));
 		return $result;
@@ -263,7 +270,7 @@ class commerceCDEK {
 	public function renderActiveMethod($method) {
 		//cdek_courier
 		$markup = $this->renderMarkup($method);
-		$markup .= $this->evo->parseText($this->tpl($method), $this->session, '[+', '+]');
+		$markup .= $this->evo->parseText($this->tpl($method), $this->getSession(), '[+', '+]');
 		
 		if($method == 'cdek_pvz') {
 			$pvzList_array = $this->getPvzList('PVZ');
