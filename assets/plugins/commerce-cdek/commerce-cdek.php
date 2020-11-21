@@ -93,7 +93,8 @@ switch ($e->name) {
 			//Если выбран способ доставки которого нет в выбранном городе (при смене города)
 			if(!isset($tariffs[$method]) && count($otherMethods)==0) {
 				//Назначаем первый из возможных
-				$method = array_shift(array_keys($tariffs));
+				$t_keys = array_keys($tariffs);
+				$method = array_shift($t_keys);
 			}	
 
 			$params['rows'][$method] = [
@@ -115,6 +116,7 @@ switch ($e->name) {
 			$modx->regClientScript($src);
 
 			$method = $processor->getCurrentDelivery();
+			$method = $method ? $method : 0;
 
 			$tariffs = $cdek->calc();
 
@@ -132,11 +134,10 @@ switch ($e->name) {
 			$otherMethods = $modx->commerce->getDeliveries();
 
 			if(count($tariffs)>0) {
-				
-				
-
+				//die(var_dump($method));
 				if(!isset($tariffs[$method]) && count($otherMethods)==0) {
-					$method = array_shift(array_keys($tariffs));
+					$t_keys = array_keys($tariffs);
+					$method = array_shift($t_keys);
 				}	
 				foreach($tariffs as $code=>$tariff) {
 					$params['rows'][$code] = [
