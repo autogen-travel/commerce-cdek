@@ -12,3 +12,7 @@
 4. Расчет производится по тарифам с режимами 1 и 2 (доставка по адресу и в пункт выдачи, с забором груза у отправителя курьером)
 
 5. В шаблоне deliveryRowTpl должен быть плейсхолдер [+markup+] для вывода дополнительных данных. Поэтому выбор способов доставки должен осуществляться блочным элементом (не select).
+
+![](https://github.com/autogen-travel/images/raw/main/1605917254409.jpg)
+![](https://github.com/autogen-travel/images/raw/main/1605917354617.jpg)
+![](https://github.com/autogen-travel/images/raw/main/1605917378237.jpg)
