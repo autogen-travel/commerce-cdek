@@ -29,27 +29,6 @@ function renderCdek() {
 }
 
 
-/*function calcSdek(cityid, cityname) {
-	$.ajax({
-		url : "/cdek-calc",
-		dataType : "html",
-		method: 'post',
-		data : {'cdek-cityid': cityid, 'cdek-cityname': cityname},
-		beforeSend: function(){
-			$('[name="city"]').css('opacity', .4);
-		},
-		success : function(data) {
-			$('.autocomplete-suggestions').remove();
-			$('[name="city"]').css('opacity', 1);
-			Commerce.updateOrderData($('[data-commerce-order]'));
-			renderCdek();
-		}
-	});
-}*/
-
-
-
-
 /* Карта ПВЗ */
 $(document).on('click', '[data-cdek-action="openPvzList"]', function(e){
 	e.preventDefault();
@@ -62,9 +41,9 @@ $(document).on('click', '[data-cdek-action="openPvzList"]', function(e){
 });
 $(document).on('click', '[data-cdek-action="setPvz"]', function(e){
 	e.preventDefault();
-	var pvz_code = $(this).closest('[data-cdek-code]').data('cdek-code');
+	var pvz_code = $(this).data('cdek-code');
 	$('[name="cdek_pvz_code"]').val(pvz_code);
-	var pvz_name = $(this).closest('[data-cdek-address]').data('cdek-address');
+	var pvz_name = $(this).data('cdek-address');
 	$('[name="address"]').val(pvz_name);
 	$.fancybox.close();
 	Commerce.updateOrderData($('[data-commerce-order]'));
@@ -130,12 +109,12 @@ function mapInit(){
     var code = $(item).data('cdek-code');
    
     clusterer.add(new ymaps.Placemark(coords, {
-      balloonContent: '<div class="cdek-map-popup" data-cdek-code="'+code+'" data-cdek-address="'+address+'">'+
+      balloonContent: '<div class="cdek-map-popup">'+
       '<div class="name"><p>'+name+'</p></div>'+
       '<div class="address"><p>'+address+'</p></div>'+
       '<div class="metro"><p>'+metro+'</p></div>'+
       '<div class="time"><p>'+hours+'</p></div>'+
-      '<button data-cdek-action="setPvz" class="cdek-pvz-button">Выбрать</button>'+
+      '<button data-cdek-action="setPvz" class="cdek-pvz-button" data-cdek-code="'+code+'" data-cdek-address="'+address+'">Выбрать</button>'+
       '</div>',
       iconCaption: name,
     }, {

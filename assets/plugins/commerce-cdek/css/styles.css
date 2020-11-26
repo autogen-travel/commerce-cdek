@@ -125,7 +125,7 @@
 
 [data-cdek-action="openPvzList"] {
 	font-size: 14px;
-    color: #3ab33b;
+    color: #3ab33b !important;
     text-decoration: underline;
 }
 [data-cdek-action="openPvzList"]:hover {
@@ -181,4 +181,9 @@
 }
 @-webkit-keyframes spin {
 	to { -webkit-transform: rotate(360deg); }
+}
+
+.cdek-packages-info {
+    font-size: 12px;
+    font-weight: normal;
 }

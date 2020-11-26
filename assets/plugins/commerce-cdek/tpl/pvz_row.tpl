@@ -12,7 +12,7 @@ data-cdek-coords="[[+coordY+],[+coordX+]]">
 			<div class="cdek_pvz_cell cdek_pvz_address">[+address+]</div>
 			<div class="cdek_pvz_cell cdek_pvz_metro">[+nearest_station+]</div>
 			<div class="cdek_pvz_cell cdek_pvz_hours">[+work_time+]</div>
-			<button data-cdek-action="setPvz" class="cdek-pvz-button">Выбрать</button>
+			<button data-cdek-action="setPvz" class="cdek-pvz-button" data-cdek-code="[+code+]" data-cdek-address="[+address+]">Выбрать</button>
 		</div>
 	</div>
 </div>

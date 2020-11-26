@@ -9,7 +9,7 @@ class commerceCDEK {
 		//1 - дверь-дверь
 		//2 - дверь - ПВЗ
 		//6 - дверь - постамат (список постаматов вовращает не для всех городов, какой-то глюк у СДЭКа)
-		$this->delivery_modes = [1,2];
+		$this->delivery_modes = [1,2,3,4];
 	}
 
 	public function getSession($key='') {
@@ -86,36 +86,101 @@ class commerceCDEK {
 	}
 
 	private function getPackages() {
-		if(isset($this->config['weight_tv']) && !empty($this->config['weight_tv'])) {
-			//Суммируем вес всех товаров
-			$weight = 0;
-			$cart = ci()->carts->getCart('products');
-			$items = $cart->getItems();
-			
-			$docs = [];
-			foreach(array_values($items) as $item) {
-				$docs[$item['id']] = $item['count'];
-			}
+		//Дефолтные значения
+		$weight_default = (isset($this->config['weight']) && is_numeric($this->config['weight']) && $this->config['weight'] > 0) ? intVal($this->config['weight']) : 0.5;
+		$length_default = (isset($this->config['length']) && is_numeric($this->config['length']) && $this->config['length'] > 0) ? intVal($this->config['length']) : 25;
+		$width_default = (isset($this->config['width']) && is_numeric($this->config['width']) && $this->config['width'] > 0) ? intVal($this->config['width']) : 25;
+		$height_default = (isset($this->config['height']) && is_numeric($this->config['height']) && $this->config['height'] > 0) ? intVal($this->config['height']) : 25;
 
-			$q = $this->evo->db->select('contentid, value', '[+prefix+]site_tmplvar_contentvalues', 'contentid IN ('.implode(',',array_keys($docs)).') AND tmplvarid='.$this->config['weight_tv']);
+		$packages = [];
 
-			while($row = $this->evo->db->getRow($q)) {
-				$weight = $weight+($row['value'] * $docs[$row['contentid']]);
-			}	
-		} else {
-			$weight = (isset($this->config['weight']) && is_numeric($this->config['weight']) && $this->config['weight'] > 0) ? intVal($this->config['weight']) : 500;
+		//Суммируем параметры всех товаров
+		$weight = 0;
+		$cart = ci()->carts->getCart('products');
+		$items = $cart->getItems();
+		
+		$docs = [];
+		foreach(array_values($items) as $item) {
+			$docs[$item['id']] = $item['count'];	
 		}
 
-		$packages = [
-			'weight'=>$weight
+		$tvids = [];
+		if(isset($this->config['weight_tv']) && !empty($this->config['weight_tv'])) {
+			$tvids[] = $this->config['weight_tv'];
+		}
+		if(isset($this->config['length_tv']) && !empty($this->config['length_tv'])) {
+			$tvids[] = $this->config['length_tv'];
+		}
+		if(isset($this->config['width_tv']) && !empty($this->config['width_tv'])) {
+			$tvids[] = $this->config['width_tv'];
+		}
+		if(isset($this->config['height_tv']) && !empty($this->config['height_tv'])) {
+			$tvids[] = $this->config['height_tv'];
+		}
+
+		if(count($tvids) > 0) {
+			foreach($docs as $id=>$count) {
+				$q = $this->evo->db->select('contentid, tmplvarid, value', '[+prefix+]site_tmplvar_contentvalues', 'contentid = '.$id.' AND tmplvarid IN ('.implode(',', $tvids).')');
+				while($row = $this->evo->db->getRow($q)) {
+					for($i=0;$i<$count;$i++) {
+						
+						switch($row['tmplvarid']) {
+							case $this->config['weight_tv']:
+								$value = $row['value'] ? $row['value'] : $weight_default;
+								$packages[$id.'_'.$i]['weight'] = $value*1000;
+							break;
+							case $this->config['length_tv']:
+								$value = $row['value'] ? $row['value'] : $length_default;
+								$packages[$id.'_'.$i]['length'] = $value;
+							break;
+							case $this->config['width_tv']:
+								$value = $row['value'] ? $row['value'] : $width_default;
+								$packages[$id.'_'.$i]['width'] = $value;
+							break;
+							case $this->config['height_tv']:
+								$value = $row['value'] ? $row['value'] : $height_default;
+								$packages[$id.'_'.$i]['height'] = $value;
+							break;
+						}
+					}
+				}
+			}
+		} else {
+			foreach($docs as $id=>$count) {
+				for($i=0;$i<$count;$i++) {
+					$packages[$id.'_'.$i]['weight'] = $weight_default*1000;
+					$packages[$id.'_'.$i]['length'] = $length_default;
+					$packages[$id.'_'.$i]['width'] = $width_default;
+					$packages[$id.'_'.$i]['height'] = $height_default;					
+				}
+				
+			}
+		}
+
+		if($this->config['group']!=1) {
+			return array_values($packages);
+		}
+
+		$packages_group = [
+			'weight' => 0,
+			'width' => 0,
+			'length' => 0,
+			'height' => 0,
 		];
-		return $packages;
+		foreach($packages as $pack) {
+			$packages_group['weight'] = $packages_group['weight'] + $pack['weight'];
+			$packages_group['width'] = $packages_group['width'] + $pack['width'];
+			$packages_group['length'] = $packages_group['length'] + $pack['length'];
+			$packages_group['height'] = $packages_group['height'] + $pack['height'];
+		}
+
+		return $packages_group ;
 	}
 
 
 	private function getCalcHash() {
 		$packages = $this->getPackages();
-		$hash_str = $this->getSession('cityid').'_'.json_encode($packages).$this->config['extradays'].$this->config['upsale'].$this->config['sender_city'];
+		$hash_str = $this->getSession('cityid').'_'.json_encode($packages).$this->config['extradays'].$this->config['upsale'].$this->config['sender_city'].'secretkey';
 		return md5($hash_str);
 	}
 
@@ -211,11 +276,13 @@ class commerceCDEK {
 
 		$cleanResult = [];
 		foreach($filterResult as $tariff) {
-			$tariff['delivery_sum'] = $tariff['delivery_sum']+$this->config['upsale'];
+			$delivery_sum = $tariff['delivery_sum']+$this->config['upsale'];
+			$tariff['delivery_sum'] = $delivery_sum > 0 ? $delivery_sum : 0;
 			$tariff['period_min'] = $tariff['period_min']+$this->config['extradays'];
 			$tariff['period_max'] = $tariff['period_max']+$this->config['extradays'];
 			switch($tariff['delivery_mode']) {
 				case 1:
+				case 3:
 					if(!isset($cleanResult['cdek_courier']) || $cleanResult['cdek_courier']['delivery_sum'] > $tariff['delivery_sum']) {
 						$tariff['name'] = 'Доставка до двери';
 						$cleanResult['cdek_courier'] = $tariff;
@@ -223,6 +290,7 @@ class commerceCDEK {
 				break;
 
 				case 2:
+				case 4:
 					if(!isset($cleanResult['cdek_pvz']) || $cleanResult['cdek_pvz']['delivery_sum'] > $tariff['delivery_sum']) {
 						$tariff['name'] = 'Самовывоз из пункта выдачи';
 						$cleanResult['cdek_pvz'] = $tariff;
@@ -250,6 +318,14 @@ class commerceCDEK {
 		$tariffs = $this->calc();
 		$tariff = $tariffs[$method];
 		$tariff['plural_days'] = $this->plural_form($tariff['period_max'], ['дня', 'дней', 'дней']);
+		$packages = $this->getPackages();
+		$pack_cnt = count($packages);
+		$pack_weight = 0;
+		foreach($packages as $pack) {
+			$pack_weight += floatVal($pack['weight']/1000);
+		}
+		$tariff['package'] = '<span class="cdek-packages-info">'.$pack_cnt.' '.$this->plural_form($pack_weight, ['место', 'места', 'мест']);
+		$tariff['package'] .= ' общим весом '.$pack_weight.' кг.</span>';
 		return $this->evo->parseText($this->tpl('markup'), $tariff, '[+', '+]');
 	}
 
