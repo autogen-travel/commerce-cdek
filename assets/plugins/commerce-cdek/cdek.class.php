@@ -1,7 +1,14 @@
 <?php
 
 class commerceCDEK {
-	public function __construct($config) {
+
+	private static $instances = [];
+	protected function __clone() { }
+	public function __wakeup() {
+        throw new \Exception("Cannot unserialize a singleton.");
+    }
+
+	protected function __construct($config) {
 		$this->evo = evolutionCMS();
 		$this->config = $config;
 		$this->token = $this->getToken();
@@ -10,7 +17,18 @@ class commerceCDEK {
 		//2 - дверь - ПВЗ
 		//6 - дверь - постамат (список постаматов вовращает не для всех городов, какой-то глюк у СДЭКа)
 		$this->delivery_modes = [1,2,3,4];
+		$this->exclude_cities = [44];
 	}
+
+	public static function getInstance($config): commerceCDEK {
+        $cls = static::class;
+        if (!isset(self::$instances[$cls])) {
+            self::$instances[$cls] = new static($config);
+        }
+
+        return self::$instances[$cls];
+    }
+
 
 	public function getSession($key='') {
 		if(!isset($_SESSION['cdek'])) {
@@ -161,18 +179,26 @@ class commerceCDEK {
 			return array_values($packages);
 		}
 
-		$packages_group = [
-			'weight' => 0,
-			'width' => 0,
-			'length' => 0,
-			'height' => 0,
-		];
+		
+
+		$volume = 0;
+		$weight = 0;
 		foreach($packages as $pack) {
-			$packages_group['weight'] = $packages_group['weight'] + $pack['weight'];
-			$packages_group['width'] = $packages_group['width'] + $pack['width'];
-			$packages_group['length'] = $packages_group['length'] + $pack['length'];
-			$packages_group['height'] = $packages_group['height'] + $pack['height'];
+			$weight = $weight+$pack['weight'];
+			$pack_volume = $pack['width'] * $pack['length'] * $pack['height'];
+			$volume = $volume + $pack_volume; 
 		}
+
+		$edge = ceil(pow($volume, 1/3));
+		$packages_group = [
+			[
+				'weight' => $weight,
+				'width' => $edge,
+				'length' => $edge,
+				'height' => $edge
+			]
+		];
+
 
 		return $packages_group ;
 	}
@@ -249,6 +275,11 @@ class commerceCDEK {
 		return $result;
 	}
 
+	public function registerOrder($fields=array()){
+		$result = $this->request('https://api.cdek.ru/v2/orders', $fields, 'post');
+		return $result;
+	}
+
 	public function calc() {
 		$hash = $this->getCalcHash();
 		if(isset($this->session['cdek_tariff_'.$hash])) {
@@ -276,6 +307,10 @@ class commerceCDEK {
 
 		$cleanResult = [];
 		foreach($filterResult as $tariff) {
+			$tariff['from_cityid'] = $this->config['sender_city'];
+			$tariff['to_cityid'] = $this->getSession('cityid');
+			$tariff['packages'] = $this->getPackages();
+
 			$delivery_sum = $tariff['delivery_sum']+$this->config['upsale'];
 			$tariff['delivery_sum'] = $delivery_sum > 0 ? $delivery_sum : 0;
 			$tariff['period_min'] = $tariff['period_min']+$this->config['extradays'];
@@ -324,8 +359,9 @@ class commerceCDEK {
 		foreach($packages as $pack) {
 			$pack_weight += floatVal($pack['weight']/1000);
 		}
-		$tariff['package'] = '<span class="cdek-packages-info">'.$pack_cnt.' '.$this->plural_form($pack_weight, ['место', 'места', 'мест']);
+		$tariff['package'] = '<span class="cdek-packages-info">'.$pack_cnt.' '.$this->plural_form($pack_cnt, ['место', 'места', 'мест']);
 		$tariff['package'] .= ' общим весом '.$pack_weight.' кг.</span>';
+		//$tariff['package']  = json_encode($packages);
 		return $this->evo->parseText($this->tpl('markup'), $tariff, '[+', '+]');
 	}
 
