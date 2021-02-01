@@ -17,7 +17,7 @@ class commerceCDEK {
 		//2 - дверь - ПВЗ
 		//6 - дверь - постамат (список постаматов вовращает не для всех городов, какой-то глюк у СДЭКа)
 		$this->delivery_modes = [1,2,3,4];
-		$this->exclude_cities = [44];
+		$this->exclude_cities = [];
 	}
 
 	public static function getInstance($config): commerceCDEK {
@@ -118,9 +118,11 @@ class commerceCDEK {
 		$items = $cart->getItems();
 		
 		$docs = [];
-		foreach(array_values($items) as $item) {
-			$docs[$item['id']] = $item['count'];	
+		foreach($items as $k=>$item) {
+			$docs[$k] = ['id'=>$item['id'], 'count'=>$item['count']];	
 		}
+
+		//$this->evo->logEvent(123, 1, '<pre>'.print_r($docs,true).'</pre>', 'СДЭК getPackages');
 
 		$tvids = [];
 		if(isset($this->config['weight_tv']) && !empty($this->config['weight_tv'])) {
@@ -137,39 +139,42 @@ class commerceCDEK {
 		}
 
 		if(count($tvids) > 0) {
-			foreach($docs as $id=>$count) {
+			foreach($docs as $k=>$item) {
+				$id = $item['id'];
+				$count = $item['count'];
 				$q = $this->evo->db->select('contentid, tmplvarid, value', '[+prefix+]site_tmplvar_contentvalues', 'contentid = '.$id.' AND tmplvarid IN ('.implode(',', $tvids).')');
 				while($row = $this->evo->db->getRow($q)) {
 					for($i=0;$i<$count;$i++) {
-						
 						switch($row['tmplvarid']) {
 							case $this->config['weight_tv']:
 								$value = $row['value'] ? $row['value'] : $weight_default;
-								$packages[$id.'_'.$i]['weight'] = $value*1000;
+								$packages[$k.'_'.$i]['weight'] = $value*1000;
 							break;
 							case $this->config['length_tv']:
 								$value = $row['value'] ? $row['value'] : $length_default;
-								$packages[$id.'_'.$i]['length'] = $value;
+								$packages[$k.'_'.$i]['length'] = $value;
 							break;
 							case $this->config['width_tv']:
 								$value = $row['value'] ? $row['value'] : $width_default;
-								$packages[$id.'_'.$i]['width'] = $value;
+								$packages[$k.'_'.$i]['width'] = $value;
 							break;
 							case $this->config['height_tv']:
 								$value = $row['value'] ? $row['value'] : $height_default;
-								$packages[$id.'_'.$i]['height'] = $value;
+								$packages[$k.'_'.$i]['height'] = $value;
 							break;
 						}
 					}
 				}
 			}
 		} else {
-			foreach($docs as $id=>$count) {
+			foreach($docs as $k=>$item) {
+				$id = $item['id'];
+				$count = $item['count'];
 				for($i=0;$i<$count;$i++) {
-					$packages[$id.'_'.$i]['weight'] = $weight_default*1000;
-					$packages[$id.'_'.$i]['length'] = $length_default;
-					$packages[$id.'_'.$i]['width'] = $width_default;
-					$packages[$id.'_'.$i]['height'] = $height_default;					
+					$packages[$k.'_'.$i]['weight'] = $weight_default*1000;
+					$packages[$k.'_'.$i]['length'] = $length_default;
+					$packages[$k.'_'.$i]['width'] = $width_default;
+					$packages[$k.'_'.$i]['height'] = $height_default;					
 				}
 				
 			}
@@ -319,7 +324,7 @@ class commerceCDEK {
 				case 1:
 				case 3:
 					if(!isset($cleanResult['cdek_courier']) || $cleanResult['cdek_courier']['delivery_sum'] > $tariff['delivery_sum']) {
-						$tariff['name'] = 'Доставка до двери';
+						$tariff['name'] = 'Доставка курьером до двери';
 						$cleanResult['cdek_courier'] = $tariff;
 					}
 				break;
