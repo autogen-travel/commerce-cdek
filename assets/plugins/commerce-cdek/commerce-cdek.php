@@ -129,7 +129,7 @@ switch ($e->name) {
 			$package_items = [];
 			foreach($items as $hash=>$item) {
 				if(isset($cdek->config['weight_tv']) && !empty($cdek->config['weight_tv'])) {
-					$weight_query = $modx->db->select('value', '+prefix+]site_tmplvar_contentvalues', 'tmplvarid='.$cdek->config['weight_tv'].' AND contentid='.$item['id'], '', 1);
+					$weight_query = $modx->db->select('value', '[+prefix+]site_tmplvar_contentvalues', 'tmplvarid='.$cdek->config['weight_tv'].' AND contentid='.$item['id'], '', 1);
 					if($modx->db->getRecordCount($weight_query)==0) {
 						$weight = (isset($cdek->config['weight']) && is_numeric($cdek->config['weight']) && $cdek->config['weight'] > 0) ? intVal($cdek->config['weight']) : 0.5;
 					} else {
