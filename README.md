@@ -23,3 +23,5 @@ Update 30.01.2021
 ![](https://github.com/autogen-travel/images/raw/main/1605917254409.jpg)
 ![](https://github.com/autogen-travel/images/raw/main/1605917354617.jpg)
 ![](https://github.com/autogen-travel/images/raw/main/1605917378237.jpg)
+
+Донаты сюда: https://yoomoney.ru/to/41001243926885
