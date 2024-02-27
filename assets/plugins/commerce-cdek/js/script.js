@@ -7,7 +7,7 @@ $(function() {
 
 
 function renderCdek() {
-	$('[name="city"]').autocomplete({
+	$('[name="city_sdek"]').autocomplete({
 		//serviceUrl: 'http://api.cdek.ru/city/getListByTerm/jsonp.php?callback=?',
 		serviceUrl: '/cdek-cities',
 		type: 'get',
@@ -21,7 +21,7 @@ function renderCdek() {
 	        };
 	    },
 	    onSelect: function (suggestion) {
-	    	$('[name="city"]').val(suggestion.name);
+	    	$('[name="city_sdek"]').val(suggestion.name);
 	    	$('[name="cdek_cityid"]').val(suggestion.id);
 	        Commerce.updateOrderData($('[data-commerce-order]'));
 	    }

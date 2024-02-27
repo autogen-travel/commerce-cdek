@@ -35,8 +35,8 @@ switch ($e->name) {
 					$cdek->setSession('pvz_code', $data['cdek_pvz_code']);
 				}
 			}	
-			if(isset($data['city'])) {
-				$cdek->setSession('cityname', $data['city']);
+			if(isset($data['city_sdek'])) {
+				$cdek->setSession('cityname', $data['city_sdek']);
 			}
 		}
 
@@ -235,7 +235,7 @@ switch ($e->name) {
 
 	case 'OnRegisterDelivery': {	
 		
-		$modx->setPlaceholder('city.value', $cdek->getSession('cityname'));	
+		$modx->setPlaceholder('city_sdek.value', $cdek->getSession('cityname'));	
 		$modx->setPlaceholder('cdek_cityid.value', $cdek->getSession('cityid'));
 		$modx->setPlaceholder('cdek_pvz_code.value', $cdek->getSession('pvz_code'));
 
@@ -308,10 +308,10 @@ switch ($e->name) {
 
 	case 'OnManagerBeforeOrdersListRender': {
         // добавляем столбец в таблицу заказов
-        $params['columns']['city'] = [
+        $params['columns']['city_sdek'] = [
             'title' => 'Город',
             'content' => function($data, $DL, $eDL) {
-                return !empty($data['fields']['city']) ? $data['fields']['city'] : '';
+                return !empty($data['fields']['city_sdek']) ? $data['fields']['city_sdek'] : '';
             },
             'sort' => 50
         ];
@@ -329,10 +329,10 @@ switch ($e->name) {
         
     case 'OnManagerBeforeOrderRender': {
         // добавляем поле на страницу просмотра заказа
-        $params['groups']['payment_delivery']['fields']['city'] = [
+        $params['groups']['payment_delivery']['fields']['city_sdek'] = [
             'title' => 'Город',
             'content' => function($data) {
-                return !empty($data['fields']['city']) ? $data['fields']['city'] : '';
+                return !empty($data['fields']['city_sdek']) ? $data['fields']['city_sdek'] : '';
             },
             'sort' => 20
         ];
@@ -351,11 +351,11 @@ switch ($e->name) {
     }
 
     case 'OnManagerBeforeOrderEditRender': {
-        $params['fields']['city'] = [
+        $params['fields']['city_sdek'] = [
             'title' => 'Город',
             'content' => function($data) {
-                $value = !empty($data['fields']['city']) ? $data['fields']['city'] : '';
-                return '<input type="text" class="form-control" name="order[fields][city]" value="' . htmlentities($value) . '">';
+                $value = !empty($data['fields']['city_sdek']) ? $data['fields']['city_sdek'] : '';
+                return '<input type="text" class="form-control" name="order[fields][city_sdek]" value="' . htmlentities($value) . '">';
             },
             'sort' => 40
         ];
